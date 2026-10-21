@@ -34,3 +34,6 @@ gradle.properties.local
 # ── 编辑器 / 系统 ────────────────────────────────────────────────
 .DS_Store
 *.swp
+
+# Kotlin 编译缓存
+.kotlin/
