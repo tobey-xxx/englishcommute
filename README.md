@@ -129,5 +129,10 @@ docs/                设计与工程约定
 
 ## License
 
-[MIT](LICENSE)。第三方内容（播客音频、封面、字幕原文）版权归各来源所有，**仅供个人学习**；
-部署给别人用之前请自行确认各源的条款。
+- **代码**：[MIT](LICENSE)。
+- **随仓库分发的第三方数据**：词库来自 [ECDICT](https://github.com/skywind3000/ECDICT)（MIT），
+  例句来自 [Tatoeba](https://tatoeba.org)（CC BY 2.0 FR），FSRS 参考实现来自
+  [py-fsrs](https://github.com/open-spaced-repetition/py-fsrs)（MIT）。
+  完整署名见 **[ATTRIBUTION.md](ATTRIBUTION.md)**。
+- **播客内容**（音频、封面、字幕原文）不随仓库分发，版权归各内容源，**仅供个人学习**；
+  对外提供服务前请自行确认各源条款。
