@@ -31,8 +31,8 @@ set -uo pipefail
 cd "$(dirname "$0")/.."
 
 # 托管 venv 优先（它有 av 等第三方依赖）；没有就退回基础解释器
-VENV=/Users/examplexu/.workbuddy/binaries/python/envs/default/bin/python
-BASE=/Users/examplexu/.workbuddy/binaries/python/versions/3.13.12/bin/python3
+VENV=${PYTHON:-python3}
+BASE=${PYTHON:-python3}
 if [ -x "$VENV" ]; then
     PY="$VENV"
     PYNOTE="托管 venv（含 av 等依赖）"
@@ -161,8 +161,8 @@ echo "================================================================"
 if [ "$SCOPE" = "all" ] || [ "$SCOPE" = "tools" ]; then
     echo
     echo "==> JVM 单元测试（FSRS 移植正确性 + 词表加载）"
-    export JAVA_HOME="${JAVA_HOME:-/Users/examplexu/.workbuddy/binaries/java/versions/17.0.20.1}"
-    export GRADLE_USER_HOME="${GRADLE_USER_HOME:-/Users/examplexu/.workbuddy/binaries/gradle-home}"
+    export JAVA_HOME="${JAVA_HOME:-}"
+    export GRADLE_USER_HOME="${GRADLE_USER_HOME:-$HOME/.gradle}"
     export PATH="$JAVA_HOME/bin:$PATH"
     if ./gradlew :app:testDebugUnitTest --console=plain -q > /tmp/ec-unit-test.log 2>&1; then
         UNIT=$("$PY" - <<'PYEOF'

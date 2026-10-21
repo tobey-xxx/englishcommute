@@ -43,7 +43,7 @@ import urllib.request
 ROOT = os.path.dirname(os.path.abspath(__file__)) + "/.."
 SRV = os.path.join(ROOT, "2.0-服务端")
 API = os.path.join(SRV, "api")
-VENV_PY = os.path.expanduser("~/.workbuddy/binaries/python/envs/ecapi/bin/python")
+VENV_PY = os.environ.get("EC_API_PYTHON", sys.executable)
 DB_SRC = os.path.join(API, "db.py")
 APP_SRC = os.path.join(API, "app.py")
 SEC_SRC = os.path.join(API, "security.py")
