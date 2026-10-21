@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+        深色基底。
+
+        ⚠️ 这里踩过一个坑：parent 原本是 `android:Theme.Material.Light.NoActionBar`，
+        而 App 界面是深色（#0B1220）。浅色主题的默认行为是「深色系统栏图标」，
+        配合 enableEdgeToEdge() 后，系统栏图标就变成了一排黑色图标压在深色背景上
+        —— 状态栏整个看不见。
+
+        现在改成 Material（深色基底），并**不再**在 XML 里写 statusBarColor。
+        edge-to-edge 下 statusBarColor 自 Android 15 起已被系统忽略（强制透明），
+        写在这里只会给人「已经处理过了」的错觉。图标明暗统一由
+        MainActivity 的 enableEdgeToEdge(SystemBarStyle.dark(...)) 显式指定。
+    -->
+    <style name="Theme.EnglishCommute" parent="android:Theme.Material.NoActionBar">
+        <!-- 启动闪屏到首帧之间露出的底色，跟界面 InkBlue 对齐，避免白闪 -->
+        <item name="android:windowBackground">#0B1220</item>
+    </style>
+</resources>

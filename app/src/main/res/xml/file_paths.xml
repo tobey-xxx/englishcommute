@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    对外分享开放的三个路径。
+
+    · diag/     —— 分享诊断日志
+    · posters/  —— 打卡海报（0.12.0）
+    · updates/  —— 下载好的更新包（2.2.1，交给系统安装器）
+
+    三个都是**子目录**，不是整个 filesDir / cacheDir ——
+    FileProvider 的授权是按路径前缀给的，多开放一级就等于把
+    episodes.json（收听索引）也一起暴露给了接收方。
+-->
+<paths>
+    <files-path name="diag" path="diag/" />
+    <cache-path name="posters" path="posters/" />
+    <!--
+        ⚠️ 必须是 `cache-path`（与 Updater 里 `File(app.cacheDir, "updates")` 对齐）。
+        写错成 files-path 时 `getUriForFile` 会抛 IllegalArgumentException，
+        症状是「点安装没反应」——而它是抛在 runCatching 里的，连崩溃都看不到。
+    -->
+    <cache-path name="updates" path="updates/" />
+</paths>

@@ -1,0 +1,23 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 自适应图标前景：播放三角 + 两行字幕，落在 66dp 安全区内 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+
+    <!-- 播放三角 -->
+    <path
+        android:fillColor="#3B82F6"
+        android:pathData="M42,34 L42,66 L70,50 Z" />
+
+    <!-- 字幕第一行（当前高亮句） -->
+    <path
+        android:fillColor="#F59E0B"
+        android:pathData="M36,74 L72,74 A2.2,2.2 0 0,1 72,78.4 L36,78.4 A2.2,2.2 0 0,1 36,74 Z" />
+
+    <!-- 字幕第二行（下一句，弱化） -->
+    <path
+        android:fillColor="#93A4C0"
+        android:pathData="M36,83 L57,83 A2.2,2.2 0 0,1 57,87.4 L36,87.4 A2.2,2.2 0 0,1 36,83 Z" />
+</vector>

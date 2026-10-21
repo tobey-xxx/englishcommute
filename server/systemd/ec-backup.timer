@@ -1,0 +1,13 @@
+[Unit]
+Description=每天备份 EnglishCommute 用户库
+
+[Timer]
+# 04:40 —— 避开内容管线（每 30 分钟一轮，整点与半点）与 Let's Encrypt 的续期窗口。
+OnCalendar=*-*-* 04:40:00
+# ★ Persistent=true：机器在 04:40 关着/重启时，开机后**补跑一次**。
+#   没有它，一台每天凌晨重启的机器会永远不备份 —— 而「定时器在跑但一直没做成事」
+#   是最难在事后发现的一种坏法（`list-timers` 里一切正常）。
+Persistent=true
+
+[Install]
+WantedBy=timers.target

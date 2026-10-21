@@ -1,0 +1,185 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- 拉 RSS / 下音频 / 下模型 -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+
+    <!-- 630MB 模型 + 每日内容后台下载 -->
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <!-- 通勤路上长时间播放 -->
+    <uses-permission android:name="android.permission.WAKE_LOCK" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE_MEDIA_PLAYBACK" />
+
+    <!--
+        后台定时任务（WorkManager 的周期任务）：开机后由系统的 RescheduleReceiver
+        重新登记。**没有它，重启之后周期任务不会恢复** —— 而下一次恢复要等到
+        用户主动打开 App，也就是「字幕得等到你打开才加载」。
+
+        ⚠️ 3.5.0 拆掉了「每日自动更新」，但**这条权限不能跟着删**：
+        它服务的还有「每小时一次的后台字幕加载」（SubtitleWorker），
+        而那条任务恰恰最需要在用户没打开 App 的时候跑。
+        旧注释只写着「每日自动更新」，差点让这次清理连权限一起摘掉。
+    -->
+    <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETED" />
+
+    <!--
+        精确闹钟（4.2.1）。
+
+        ⚠️ 4.2.0 刻意没声明它，理由是「少一次授权」。**那个判断是错的**：
+          不声明 ⇒ `canScheduleExactAlarms()` 恒为 false ⇒ 只能走不精确，
+          而 Doze / 厂商后台限制下不精确闹钟可能被推迟很久甚至丢掉。
+          一个「必须准时到达」的提醒，可靠性优先于少一次授权。
+        用户没允许时我们仍然退回到不精确（代码里有三级退路），
+        设置页也会给出「去允许」的入口。
+    -->
+    <uses-permission android:name="android.permission.SCHEDULE_EXACT_ALARM" />
+
+    <!--
+        App 内更新（2.2.1）：下载完新版本后要交给系统安装器。
+        没有这个权限的话 `ACTION_VIEW` 会被系统直接拒掉，而且是**静默**的 ——
+        用户点了「安装」什么都不发生。
+        注意它只是一个**声明**：真正的开关仍然由用户在
+        「安装未知应用」里逐个应用授权（`canRequestPackageInstalls()` 判的就是它）。
+    -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
+
+    <!--
+        下面那个 hasFragileUserData 显式写成 false：卸载时**不提供**
+        「保留应用数据」的选项。
+
+        属性名容易看反 —— hasFragileUserData="true" 才是在卸载确认框里
+        多出一个「保留数据」勾选框。默认值本来就是 false，这里写出来是为了
+        不让某个 ROM 的默认值、或日后一次顺手的改动把它翻过去：这个 App 最大的
+        那块数据（离线音频）是**可重建**的，没有任何理由让它们在卸载后
+        继续留在用户手机上。
+
+        ⚠️ 2.1.0 删掉了原来关于「630 MB 转写模型 + 108 MB 翻译模型」那半句：
+        端侧模型整条拆掉了，这段话描述的东西已经不存在。
+        `hasFragileUserData="false"` 这个决定仍然成立，理由只剩音频。
+
+        XML 不允许在开始标签的属性之间写注释，所以这段只能放在这里。
+    -->
+    <!--
+        ⚠️ 明文 HTTP 的策略**只写在 `res/xml/network_security_config.xml` 里**，
+        这里不再出现 `usesCleartextTraffic`。
+
+        2.0.0 那个 bug 就是「两处真相源」打架：manifest 写着 false（全局禁明文），
+        而 2.0 的内容服务器是 `http://YOUR_SERVER_IP` —— 于是服务器通路
+        **从发布起就没通过一次**，一个字节都没发出去，表现是「永远没有服务器字幕」。
+
+        留两处，就会有人只看一处、漏掉另一处。判据与例外范围都在那个 xml 的注释里。
+    -->
+    <application
+        android:name=".EnglishCommuteApp"
+        android:allowBackup="true"
+        android:dataExtractionRules="@xml/data_extraction_rules"
+        android:fullBackupContent="@xml/backup_rules"
+        android:hasFragileUserData="false"
+        android:icon="@mipmap/ic_launcher"
+        android:label="@string/app_name"
+        android:networkSecurityConfig="@xml/network_security_config"
+        android:supportsRtl="true"
+        android:theme="@style/Theme.EnglishCommute">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true"
+            android:label="@string/app_name"
+            android:launchMode="singleTop"
+            android:theme="@style/Theme.EnglishCommute">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <!--
+            内容同步前台服务。
+            foregroundServiceType 必须与 FOREGROUND_SERVICE_DATA_SYNC 权限配对声明，
+            否则 Android 14+ 启动时会抛 MissingForegroundServiceTypeException。
+        -->
+        <service
+            android:name=".sync.ContentSyncService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
+
+        <!--
+            播放服务（Media3 MediaSessionService）。
+
+            · exported=true + 那一行 intent-filter 是 Media3 的标准声明方式：
+              系统与其他 App（车机、手表、蓝牙耳机）通过这个 action 发现会话。
+              不加的话通知栏能显示，但外部控制（车机上一首/下一首）拿不到会话。
+            · foregroundServiceType 必须是 mediaPlayback，且与清单里已声明的
+              FOREGROUND_SERVICE_MEDIA_PLAYBACK 权限配对 —— Android 14+ 缺一不可。
+        -->
+        <!--
+            诊断日志的分享出口。
+
+            exported=false + grantUriPermissions=true 是唯一安全的组合：
+            · exported=false —— 外部应用不能主动来读我们的日志
+            · grantUriPermissions=true —— 用户主动点「分享」时，
+              通过 Intent 临时授权给接收方那一个文件。
+            权限是**按次**授予的，不会留下长期可读的入口。
+
+            authority 用 ${applicationId} 前缀，避免与其它应用撞名
+            （撞名会让安装直接失败，是那种「本地好好的、一装就报错」的问题）。
+        -->
+        <provider
+            android:name="androidx.core.content.FileProvider"
+            android:authorities="${applicationId}.fileprovider"
+            android:exported="false"
+            android:grantUriPermissions="true">
+            <meta-data
+                android:name="android.support.FILE_PROVIDER_PATHS"
+                android:resource="@xml/file_paths" />
+        </provider>
+
+        <service
+            android:name=".player.PlaybackService"
+            android:exported="true"
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="androidx.media3.session.MediaSessionService" />
+            </intent-filter>
+        </service>
+
+        <!--
+        每晚 23:30 的提醒（4.2.0）。
+
+        ⚠️ 为什么这里**没有**任何厂商推送（小米/OPPO/vivo/荣耀）的权限与 SDK：
+           那四家都要**企业开发者认证**、而且小米/OPPO/vivo 还要求应用上架，
+           个人开发者拿不到。而「每天固定时刻提醒一下」这件事本来就不需要推送 ——
+           本地闹钟够，而且断网也能响（详见 `推送与每日提醒-技术调研.md`）。
+
+        ⚠️ `SCHEDULE_EXACT_ALARM` 刻意**不声明**：它会让「闹钟和提醒」出现在
+           系统权限页里，要用户额外授权一次；而这个提醒差几分钟完全无所谓。
+           没有它我们退化成 `setAndAllowWhileIdle`（系统在附近叫醒），
+           少一次授权 = 少一个放弃的理由。
+    -->
+    <receiver
+        android:name=".notify.ReminderReceiver"
+        android:exported="false">
+        <intent-filter>
+            <action android:name="com.example.englishcommute.action.DAILY_REMIND" />
+        </intent-filter>
+    </receiver>
+
+
+    <receiver
+        android:name=".notify.BootReceiver"
+        android:exported="true"
+        android:directBootAware="false">
+        <intent-filter>
+            <action android:name="android.intent.action.BOOT_COMPLETED" />
+            <!-- ★ 装新版本也会清掉闹钟 —— 少了这条，每次更新后提醒就悄悄消失 -->
+            <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
+        </intent-filter>
+    </receiver>
+
+</application>
+
+</manifest>

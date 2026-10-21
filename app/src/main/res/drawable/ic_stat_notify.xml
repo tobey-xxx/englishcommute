@@ -1,0 +1,30 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    通知栏小图标。
+
+    必须是**单色**的：Android 取通知小图标时只用 alpha 通道，
+    把彩色图标塞进去会渲染成一整块白色方块（之前直接复用
+    ic_launcher_foreground 就是这个毛病，只是没人注意到）。
+    这里只保留形状：播放三角 + 两行字幕。
+-->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+
+    <!-- 播放三角 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M5.5,4.5 L5.5,19.5 L15.5,12 Z" />
+
+    <!-- 字幕第一行 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M17.5,8.5 L22,8.5 L22,10.5 L17.5,10.5 Z" />
+
+    <!-- 字幕第二行 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:pathData="M17.5,13.5 L22,13.5 L22,15.5 L17.5,15.5 Z" />
+</vector>

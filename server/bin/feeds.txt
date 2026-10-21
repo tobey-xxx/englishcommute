@@ -1,0 +1,25 @@
+# EnglishCommute 2.0 · 服务端转写源清单
+# 每行两选一：  源id=FeedURL   或   裸 FeedURL（id 从 URL 自动生成）
+# ⚠️ 必须与 App 里 content/FeedSource.kt 的 16 个源保持一致，
+#    否则服务器产出的字幕 App 对不上源。
+
+npr-news-now=https://feeds.npr.org/500005/podcast.xml
+npr-up-first=https://feeds.npr.org/510318/podcast.xml
+npr-consider-this=https://feeds.npr.org/510355/podcast.xml
+ted-talks-daily=https://feeds.simplecast.com/54nAGcIl
+npr-short-wave=https://feeds.npr.org/510351/podcast.xml
+npr-life-kit=https://feeds.npr.org/510338/podcast.xml
+npr-planet-money=https://feeds.npr.org/510289/podcast.xml
+npr-indicator=https://feeds.npr.org/510325/podcast.xml
+npr-politics=https://feeds.npr.org/510310/podcast.xml
+npr-code-switch=https://feeds.npr.org/510312/podcast.xml
+listening-time=https://feeds.simplecast.com/obaHfEr1
+
+# ---- 4.3.0 新增（2026-10-18 在**香港服务器上**实测：200 / 全带音频 / 最新一期 < 7 天）----
+# ⚠️ 判据变了：2.0 之后音频由服务器托管，所以「源站被墙」不再是否决条件，
+#    只问「服务器能不能抓到」。BBC / CBC 当年就是因为手机直连不通才被否的。
+bbc-6min=https://podcasts.files.bbci.co.uk/p02pc9tn.rss
+bbc-global=https://podcasts.files.bbci.co.uk/p02nq0gn.rss
+wsj-whatsnew=https://video-api.shdsvc.dowjones.io/api/podcasts/feed/the%20wall%20street%20journal%20whats%20news
+cbc-world=https://www.cbc.ca/podcasting/includes/wr.xml
+aj-take=https://www.omnycontent.com/d/playlist/9c074afa-3313-47e8-b802-a9f900789975/09af2160-238f-48b2-b20b-ad4b00ebd8e7/b86dddc1-67a5-41c2-a13c-ad4b00ebd8f5/podcast.rss

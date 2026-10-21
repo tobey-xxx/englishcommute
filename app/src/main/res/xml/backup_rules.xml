@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  云备份清单（Android 11 及以下走这个文件；12+ 走 data_extraction_rules.xml）。
+
+  ⚠️ domain 与 path 必须和代码里真实的目录对上。写错**不会报任何错**，
+     只会静默地不生效 —— 0.14.0 及更早的两条 exclude 就都是错的：
+
+       <exclude domain="file" path="models/" />   ← filesDir 下没有 models/
+       <exclude domain="file" path="audio/" />    ← 内部目录下没有 audio/
+
+     后果是**一条都没排除**：模型、音频全都在备份范围内，只是被 Auto Backup
+     那个 25 MB 总上限拦住了。而超限的代价不是「只备份前 25 MB」，
+     是**整次备份失败** —— 于是连真正该备份的每日更新时刻、播放进度也一起丢了。
+
+  要排除的都是「大、且能重建」的东西：
+    · 音频 / 字幕 / 译文（外部域）—— 本来就有 3 天保留期，会自己消失
+
+  诊断日志单独一条：它描述的是**这台机器**上的问题，换机带过去没有意义。
+
+  ⚠️ 2.1.0 删掉了两条 exclude，因为它们指向的目录**已经不存在了**：
+    · <exclude domain="external" path="parakeet-tdt-0.6b-v2-int8/" />  识别模型
+    · <exclude domain="file"     path="translate/" />                  翻译模型
+  端侧识别与翻译整条链路拆掉了（连同那两个目录），升级用户的残骸由
+  `setup/OnDeviceModelCleanup` 清掉。留着两条指不到东西的规则不会报错，
+  但它会让下一个读这个文件的人以为「还有模型要排除」。
+
+  🔒 这个文件里的路径与代码常量是两份真相，改了 AudioStore 的目录名就要同步改
+     这里 —— tools/verify-ship-contract.py 会断言它们一致，改了忘了会被拦住。
+     （2.1.0 起这两条规则的校验从 verify-firstrun-deploy.py 搬到了那里，
+       原因见那个脚本的头部说明。）
+-->
+<full-backup-content>
+    <!-- 外部域 = getExternalFilesDir() -->
+    <exclude domain="external" path="episodes/" />
+
+    <!-- 内部域 = filesDir -->
+    <exclude domain="file" path="diag/" />
+</full-backup-content>

@@ -1,0 +1,154 @@
+#!/usr/bin/env python3
+# -*- coding: utf-8 -*-
+"""
+EnglishCommute · 管理员命令行：审批注册 / 发重置码 / 踢令牌。
+
+## 为什么管理面是「一条 SSH 命令」，而不是一个网页后台
+
+因为**少一个端点就少一处要鉴权、要限速、要防越权的地方** —— 而这里的管理员
+只有一个人，他本来就有 SSH。给一个单人审批队列做一个网页，等于自己给自己
+增加一个「必须写对否则全盘皆输」的鉴权面，换来的只是省下一次 ssh。
+
+配套结论：**`/api/` 下没有任何管理端点**（见 `api/app.py` 的说明）。
+下面这些动作全部直接读写 SQLite，不经过 HTTP。
+
+## 用法（在服务器上；本机是 `ssh YOUR_HOST 'ec-admin …'`）
+
+    ec-admin list                  待审批的注册 + 待处理的重置申请（默认命令）
+    ec-admin users                 全部账号 + 状态 + 最近活跃
+    ec-admin approve <账号>         通过注册
+    ec-admin reject <账号> [原因]   拒绝注册
+    ec-admin reset <账号>           生成一次性重置码（30 分钟、用一次即废）
+    ec-admin revoke <账号>          踢掉该账号所有设备（丢手机时用）
+    ec-admin sqlite                打开一个只读的 SQL 会话（排查用）
+
+⚠️ 输出的码要**当面/私聊**给用户；它等价于一次登录凭证。
+"""
+import os
+import sys
+import time
+
+sys.path.insert(0, os.path.join(os.path.dirname(os.path.abspath(__file__)), "..", "api"))
+
+import db          # noqa: E402
+import security    # noqa: E402
+
+
+def ts(v) -> str:
+    return time.strftime("%m-%d %H:%M", time.localtime(int(v))) if v else "—"
+
+
+def cmd_list() -> int:
+    db.init()
+    pend = db.list_pending()
+    resets = db.pending_resets()
+    if not pend and not resets:
+        # ★ 无事可做时也要打一句结论：什么都不打会让人分不清
+        #   「没有待办」和「命令没跑起来」。
+        print("没有待处理的事。")
+        return 0
+    if pend:
+        print("待审批的注册（%d）：" % len(pend))
+        for r in pend:
+            print("  %-16s 申请于 %s" % (r["name"], ts(r["created_at"])))
+        print("\n  批准：ec-admin approve <账号>     拒绝：ec-admin reject <账号> [原因]")
+    if resets:
+        print("\n待处理的重置申请（%d）：" % len(resets))
+        for r in resets:
+            print("  %-16s 申请于 %s" % (r["name"], ts(r["requested_at"])))
+        print("\n  发码：ec-admin reset <账号>")
+    return 0
+
+
+def cmd_users() -> int:
+    db.init()
+    rows = db.list_users()
+    if not rows:
+        print("还没有任何账号。")
+        return 0
+    print("%-16s %-9s %-14s %s" % ("账号", "状态", "最近活跃", "备注"))
+    for r in rows:
+        print("%-16s %-9s %-14s %s" % (r["name"], r["status"], ts(r["seen"]), r["note"]))
+    return 0
+
+
+def cmd_approve(name: str) -> int:
+    db.init()
+    u = db.get_user(name)
+    if u is None:
+        print("没有这个账号：%s（先用 ec-admin list 看有哪些在等）" % name)
+        return 1
+    if u["status"] == "active":
+        print("%s 已经是 active，没做什么。" % name)
+        return 0
+    db.set_status(name, "active")
+    print("✅ %s 已通过。他可以登录了。" % name)
+    print("   ⚠️ 这一步不会通知他 —— 如果他是等在那儿的，记得说一声。")
+    return 0
+
+
+def cmd_reject(name: str, note: str = "") -> int:
+    db.init()
+    u = db.get_user(name)
+    if u is None:
+        print("没有这个账号：%s" % name)
+        return 1
+    db.set_status(name, "rejected", note)
+    print("✅ %s 已拒绝（note=%s）。他登录时会看到「这个账号没有通过」。" % (name, note or "空"))
+    return 0
+
+
+def cmd_reset(name: str) -> int:
+    db.init()
+    u = db.get_user(name)
+    if u is None:
+        print("没有这个账号：%s" % name)
+        return 1
+    code = security.new_reset_code()
+    if not db.grant_reset(name, security.code_hash(code), security.RESET_CODE_TTL_MIN):
+        print("生成失败：写库没成功。")
+        return 1
+    print("✅ 给 %s 的一次性重置码：" % name)
+    print()
+    print("        %s" % code)
+    print()
+    print("   有效期 %d 分钟，用一次即废。" % security.RESET_CODE_TTL_MIN)
+    print("   他在 App 里输这个码 + 新密码即可；**之后他所有设备都会被登出**。")
+    return 0
+
+
+def cmd_revoke(name: str) -> int:
+    db.init()
+    u = db.get_user(name)
+    if u is None:
+        print("没有这个账号：%s" % name)
+        return 1
+    n = db.revoke_all(int(u["id"]))
+    print("✅ 已踢掉 %s 的 %d 个登录（下次请求就会收到「登录已失效」）。" % (name, n))
+    return 0
+
+
+def main() -> int:
+    argv = sys.argv[1:]
+    cmd = argv[0] if argv else "list"
+    rest = argv[1:]
+    if cmd == "list":
+        return cmd_list()
+    if cmd == "users":
+        return cmd_users()
+    if cmd == "approve" and rest:
+        return cmd_approve(rest[0])
+    if cmd == "reject" and rest:
+        return cmd_reject(rest[0], " ".join(rest[1:]))
+    if cmd == "reset" and rest:
+        return cmd_reset(rest[0])
+    if cmd == "revoke" and rest:
+        return cmd_revoke(rest[0])
+    if cmd == "sqlite":
+        os.execv("/usr/bin/sqlite3", ["sqlite3", "-readonly", db.DB_PATH])
+    print(__doc__.strip().split("## 用法")[1].strip())
+    return 2
+
+
+if __name__ == "__main__":
+    sys.exit(main())

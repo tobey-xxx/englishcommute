@@ -1,0 +1,49 @@
+[Unit]
+Description=EnglishCommute 账号与打卡同步接口
+Documentation=https://your-domain.example/api/healthz
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+
+# ── 为什么跑在专用非 root 用户下 ────────────────────────────────────────────
+# 这个进程是**第一个对公网开放的、会解析不可信输入的**东西。
+# 它只要两样权限：读自己的代码、读写自己的数据目录。给它 root 没有任何好处，
+# 而代价是「一处解析漏洞 = 整台机器」。
+User=ecapi
+Group=ecapi
+WorkingDirectory=/opt/ec/api
+Environment=EC_DB=/opt/ec/data/ec.db
+Environment=PYTHONUNBUFFERED=1
+# ProtectSystem=strict 会让 /opt 对进程只读 ⇒ Python 写不了 __pycache__。
+# 它本来就会静默跳过，这里显式关掉是为了别让日志里多出一串看不懂的尝试。
+Environment=PYTHONDONTWRITEBYTECODE=1
+
+# ⚠️ `--workers 1` 是**必须**的，不是懒：三处登录限速是**进程内**的内存状态
+#    （见 api/security.RateLimiter）。多开一个 worker，限速就变成「各自算各自
+#    的」，5 次上限实际变成 5×N 次 —— 而且没有任何东西会报错。
+ExecStart=/opt/ec/venv/bin/uvicorn app:app --host 127.0.0.1 --port 8081 --workers 1
+
+Restart=always
+RestartSec=3
+
+# ── 日志 ────────────────────────────────────────────────────────────────────
+# 只进 journald。uvicorn 的 access log 只记「方法 / 路径 / 状态码」，
+# **不含请求体与请求头** ⇒ 密码与令牌进不了日志。
+# ⚠️ 不要改成写文件：多一份能被误拷出来的日志，就多一次凭证泄露的机会。
+StandardOutput=journal
+StandardError=journal
+
+# ── 收紧权限（它只需要代码 + 数据目录）────────────────────────────────────
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/ec/data
+# 新建文件默认不给同组/其他人读：库里是用户数据，而 sqlite 自己建文件时
+# 用的是默认 umask（022 ⇒ 644，同机其它账号可读）。
+UMask=0027
+
+[Install]
+WantedBy=multi-user.target

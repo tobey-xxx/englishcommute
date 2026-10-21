@@ -1,0 +1,93 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+    ⚠️ 这个文件是 2.0.0 那个「服务器完全连不上」bug 的正解，别删。
+
+    ## 背景（2.0.0）
+
+    targetSdk 28 起，Android 默认**禁止明文 HTTP**（cleartext）。而当时的内容服务器是
+    `http://YOUR_SERVER_IP` —— 一个 IP、没有域名、也就没有证书。
+
+    原来的 manifest 里写着 `android:usesCleartextTraffic="false"`，
+    于是 OkHttp 每次请求都直接抛 `UnknownServiceException`、**一个字节都没发出去**。
+    表现是素材库照常更新（退回本机 RSS）、但永远没有服务器字幕。
+    真机日志里就一行：`W Server 目录不可用（UnknownServiceException）：退回本机源`。
+
+    ## 为什么不是 `usesCleartextTraffic="true"`
+
+    那是**全局**放开明文，连 NPR / TED 的音频请求也不再强制 HTTPS ——
+    为一个 IP 把整个 App 的出站都降级，不划算。
+
+    这里只放行**唯一一台我们自己的服务器**，其余一律保持「必须 HTTPS」。
+    Android 7.0+ 上本文件优先于 manifest 的 usesCleartextTraffic 属性，
+    所以 manifest 里那个属性已删掉 —— 留两处真相源只会让人猜哪个生效。
+
+    ## 3.1.0：内容已经全走 HTTPS 了，但口子**仍然留着**
+
+    服务器上了 `https://YOUR_DOMAIN`（Let's Encrypt 证书），`ServerConfig.BASE_URL`
+    跟着换了。所以下面那条 `domain-config` 在**正常路径上一次都不会被走到** ——
+    清单、字幕、音频、读音、更新包全部走 HTTPS。
+
+    ⚠️ **那为什么不删掉它？**
+
+    因为它是这个 App 唯一的**应急更新通道**。
+
+    域名出问题时（解析异常、证书续期失败、甚至换机器），自救办法是让服务端把
+    `update.json` 里的下载地址切回 IP —— 服务器上一条命令的事。
+    具体命令在 `server/README.md` 的「回退到 IP」一节。
+
+    ⚠️ 命令**故意不写在这里**：XML 注释里不允许出现连续两个减号，而命令行参数
+       到处都是它。（本工程第三次被这条规则绊到，前两次都在 Android 的布局 XML 里。）
+
+    如果包里没有这条例外，那一刻**所有 3.1.0 用户都收不到更新**，只能拿数据线装包。
+    留住它的成本是「一条没有任何代码路径会主动使用的例外」，
+    换来的是一条域名失效时仍然能走的退路。
+
+    ⚠️ 形状上的判据（tools/verify-server-20.py 有断言守着）：
+       · 只放行**恰好一条 IP**，不放行域名 ——
+         放行域名就等于给未来的自己留了个走明文回退的诱惑；
+       · 它必须与 `ServerConfig` 里那个 IP **一致**（若哪天 IP 变了，两处都要改，
+         否则这条应急通道会静默失效 —— 而失效的表现要等到真出事那天才知道）。
+
+    ## 什么时候可以真的删掉它
+
+    等到「应急更新通道」也有 HTTPS 的替代品之后 —— 具体是：
+    `update.json` 的下载地址与 `BASE_URL` 都不再依赖这台机器的 IP
+    （比如换了一台机器、且所有在用设备都已升到 3.1.0 之后）。
+    在那之前，删掉它是把唯一的退路拆了。
+-->
+<network-security-config>
+
+    <!-- 默认：出站强制 HTTPS。NPR / TED / 各 CDN 的音频与封面都走这条。 -->
+    <base-config cleartextTrafficPermitted="false">
+        <trust-anchors>
+            <certificates src="system" />
+        </trust-anchors>
+    </base-config>
+
+    <!--
+        唯一的明文例外：内容服务器的 **IP 形态**（应急更新通道）。
+
+        ⚠️ 它**故意不等于** `BASE_URL` 的 host —— 3.1.0 起 BASE_URL 是
+        `https://YOUR_DOMAIN`，而这条放行的是那台机器的 IP。
+        它只在「把 update.json 的下载地址切回 IP」这种应急操作之后才被用到，
+        理由见文件头。
+
+        ⚠️ 但它**必须与 `server/bin/publish_update.py` 的
+        `FALLBACK_BASE_URL` 一致** —— 那是这条通道要用到的那个地址的唯一真相源。
+        不一致 = 应急通道静默失效，而且要到真出事那天才会发现。
+        tools/verify-server-20.py 里有断言把这两处对起来。
+    -->
+    <!--
+        开源版**默认不放行任何明文地址**。
+
+        如果你要保留「IP 应急更新通道」（见文件头那段背景），加一条：
+
+            <domain-config cleartextTrafficPermitted="true">
+                <domain includeSubdomains="false">203.0.113.10</domain>
+            </domain-config>
+
+        ⚠️ 它必须与 `server/bin/publish_update.py` 的 FALLBACK_BASE_URL 一致 ——
+           那是这条通道所用地址的唯一真相源。
+    -->
+
+</network-security-config>

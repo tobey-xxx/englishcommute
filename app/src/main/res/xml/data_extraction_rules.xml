@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Android 12+ 的数据提取规则（云备份 + 换机直传）。理由见 backup_rules.xml。
+
+  两个块里的排除项**必须一致**。只排除 cloud-backup 的话，换机迁移
+  仍然会把一堆 3 天就过期的音频搬到新手机上。
+
+  ⚠️ 2.1.0 删掉了识别模型与翻译模型那两条 exclude —— 那两个目录
+     随端侧识别/翻译整条链路一起拆掉了。原因与审计点见 backup_rules.xml。
+-->
+<data-extraction-rules>
+    <cloud-backup>
+        <exclude domain="external" path="episodes/" />
+        <exclude domain="file" path="diag/" />
+    </cloud-backup>
+
+    <device-transfer>
+        <exclude domain="external" path="episodes/" />
+        <!-- 日志描述的是旧机器上的问题 -->
+        <exclude domain="file" path="diag/" />
+    </device-transfer>
+</data-extraction-rules>

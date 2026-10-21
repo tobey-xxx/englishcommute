@@ -1,0 +1,43 @@
+# EnglishCommute 内容管线 · 服务
+#
+# ⚠️ 版本化真相源：由 `deploy.sh` 装到 /etc/systemd/system/ 并 daemon-reload。
+[Unit]
+Description=EnglishCommute 内容管线（RSS → 静音切块转写 → 静态发布）
+Documentation=file:/opt/ec/bin/cycle.py
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/ec
+# `--rehost --rehost-limit N`（2.1.9 起常驻）：
+#   给「字幕在、但服务器上没有音频」的条目重下音频 + 重转写。
+#
+#   为什么**常驻**而不是一次性跑一遍：
+#   ① 存量迁移需要它 —— 2.1.9 之前音频是「下完即删」的，那些条目的字幕
+#      **永远**配不回同一份音频（再下回来是另一次广告拼接），只能重做。
+#      每轮做 N 条，存量会在几小时内自己补完，不用占满一次长任务。
+#   ② 补完之后它变成**零成本的自我修复**：`rehost_items` 只是一次 48 条的状态扫描，
+#      返回空就什么都不做。而哪天某条音频被误删，它会自动重做 —— 而不是留一条
+#      字幕与音频对不上的条目在那儿。
+#
+# ⚠️ N 不能太大：一轮的总预算由 [TimeoutStartSec] 与 MemoryHigh 兜着，
+#    而 `--rehost-limit N` 意味着这一轮**额外**要下 N 集音频 + 转写 N 集
+#    （实测一集约 65 秒：下载 4.5 MB / 转写 29s / 翻译 20s）。10 条约 11 分钟。
+ExecStart=/opt/ec/venv/bin/python /opt/ec/bin/cycle.py --hours 48 --per-feed 2 --rehost --rehost-limit 10
+
+# ── 内存纪律：这台机器只有 2 GB ────────────────────────────────
+# MemoryHigh 是软限（先触发内核回收），MemoryMax 是硬限。
+# 关键：超限只 kill 这个 cgroup（也就是这一轮任务），**不会让整机 OOM**。
+# 子进程（每集一个转写进程）也算在这个 cgroup 里，所以它是整轮的总闸。
+MemoryHigh=1200M
+MemoryMax=1500M
+MemorySwapMax=1G
+
+# 一轮最多跑 1 小时。实测单集约 65 秒（下载 / 转写 29s / 翻译 20s），
+# 一轮的上限是「新内容 ≤ 22 集 + rehost 10 集」≈ 35 分钟，留了余量。
+TimeoutStartSec=3600
+# 让路给别的任务，别和用户请求抢 CPU
+Nice=10
+IOSchedulingClass=idle
+Restart=no

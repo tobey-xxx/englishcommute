@@ -1,0 +1,22 @@
+[Unit]
+Description=EnglishCommute 用户库备份（打卡记录 / 账号）
+Documentation=https://your-domain.example/api/healthz
+
+[Service]
+Type=oneshot
+User=ecapi
+Group=ecapi
+Environment=EC_DB=/opt/ec/data/ec.db
+Environment=EC_BACKUP_DIR=/opt/ec/data/backup
+
+# 走 Python 脚本而不是 `sqlite3 db ".backup ..."`：
+# 脚本里除了备份还做了两件事 —— 打开备份验完整性、数一遍账号行数并打出来。
+# 判据是「备份能用」，不是「备份文件存在」。
+ExecStart=/opt/ec/venv/bin/python /opt/ec/bin/backup_db.py
+
+# 与 api 服务同一套收紧策略
+NoNewPrivileges=true
+PrivateTmp=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/opt/ec/data
