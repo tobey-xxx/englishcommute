@@ -1,0 +1,25 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 640" width="1280" height="640">
+  <rect width="1280" height="640" fill="#FBFAF7"/>
+  <rect x="0" y="0" width="8" height="640" fill="#9C5F14"/>
+
+  <text x="80" y="132" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="20" fill="#8F8B82" letter-spacing="3">SELF-HOSTED · ANDROID · MIT</text>
+
+  <text x="80" y="222" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="62" font-weight="600" fill="#16181C">EnglishCommute</text>
+  <text x="80" y="286" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="30" fill="#3E4249">Turn your commute into a study session.</text>
+
+  <line x1="80" y1="336" x2="1200" y2="336" stroke="#E6E1D5" stroke-width="1"/>
+
+  <text x="80" y="392" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="23" fill="#3E4249">16 podcast feeds → bilingual, sentence-level transcripts</text>
+  <text x="80" y="430" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="23" fill="#3E4249">→ an 18 MB Android app that makes listening a study loop</text>
+
+  <rect x="80" y="482" width="236" height="52" rx="8" fill="#F2EEE5"/>
+  <text x="100" y="515" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="19" fill="#3E4249">2-core VPS · no GPU</text>
+
+  <rect x="336" y="482" width="196" height="52" rx="8" fill="#F2EEE5"/>
+  <text x="356" y="515" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="19" fill="#3E4249">no ads / no telemetry</text>
+
+  <rect x="552" y="482" width="300" height="52" rx="8" fill="#FAEEDA"/>
+  <text x="572" y="515" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="19" fill="#633806">FSRS-6 vocabulary review</text>
+
+  <text x="80" y="590" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="18" fill="#8F8B82">github.com/tobey-xxx/englishcommute</text>
+</svg>
