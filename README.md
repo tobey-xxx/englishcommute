@@ -1,138 +1,105 @@
-# EnglishCommute · 通勤英语
+# EnglishCommute
 
-一个**为通勤场景**做的英语听力 App：自动抓取十余家播客源的当日节目，在服务器端转写成字幕并翻译，
-手机上离线听、逐句看、生词入本、按 FSRS 复习，每天打卡。
+**Turn your commute into a study session.** A self-hosted pipeline that turns 16 English podcast feeds into
+bilingual, sentence-level transcripts — plus an Android app where listening, reading and reviewing are one loop.
 
-Android（Kotlin + Jetpack Compose + Media3） + 自托管服务端（FastAPI + SQLite + faster-whisper）。
+**English** · [中文](README.zh-CN.md) · [Architecture](docs/ARCHITECTURE.md) · [Attribution](ATTRIBUTION.md) · MIT
 
-> ⚠️ 这是个人项目的开源化版本，**不含任何真实部署信息**：域名、服务器地址、账号、密码全部是占位符，
-> 服务器地址从构建参数读取。详见 [配置自己的服务器](#配置自己的服务器)。
+<p align="center"><img src="docs/architecture.svg" alt="Architecture: podcast RSS → self-hosted server (download, transcribe, translate) → Android app" width="100%"></p>
 
----
+## Why another English-listening app
 
-## 它解决什么问题
+Most apps are a player plus a subtitle file fetched from the publisher, if one exists at all.
+This one **owns the pipeline**:
 
-通勤 20 分钟想练英语，遇到的都是同一个循环：找音频 → 没字幕 → 听不懂的词查完就忘。
-这个 App 把这条链收紧成三步：**打开就有今天的内容** → **边听边看字幕** → **生词自动进复习队列**。
+| | Typical app | EnglishCommute |
+| --- | --- | --- |
+| Subtitles | publisher's file, often missing or out of sync | **you** transcribe the audio you actually host |
+| Audio | streamed from third-party CDNs (ads get re-stitched → timestamps drift) | **served from your own domain** |
+| On-device model | 100–700 MB download, minutes of waiting per episode | **none — 18 MB APK** |
+| Data | telemetry SDKs | **local only; no ads, no analytics** |
+| Cost | subscription | **a $5 VPS** (2 vCPU / 2 GB is enough) |
 
-## 功能
+The point is not "offline". The point is that **the audio you hear and the subtitle you read are the same bytes** —
+so sentence-level playback, tap-a-sentence-to-repeat, and word-level review actually line up.
 
-- **自动内容源**：16 个英文播客源（NPR 系、BBC、CBC、WSJ、Al Jazeera、TED 等），服务端每 30 分钟抓一轮
-- **字幕与译文**：服务端用 faster-whisper 转写 + 机器翻译，客户端只负责显示（端侧不跑模型，APK 18 MB）
-- **逐句播放**：字幕点一句播一句，可循环、可跳到下一句
-- **生词本**：长按字幕选词 → 自动查词形、加语境句 → FSRS-6 间隔复习（正面认词，背面例句 + 读音 + 原声）
-- **每日提醒**：本地闹钟每晚 23:30 提醒，今天已达标就不打扰（不依赖推送服务）
-- **打卡与连续天数**：按墙钟累计收听时长，日历 / 连续天数 / 月度海报
-- **多设备同步（可选）**：账号登录后打卡与生词本跨设备同步；不登录完整可用
-- **零广告、零埋点**：没有统计 SDK、没有第三方网络请求（除内容源本身）
+## What you get
 
-## 架构一图
+- **16 feeds, one tap** — NPR, BBC, CBC, WSJ, Al Jazeera, TED and more; the server pulls every 30 minutes.
+- **Sentence-level subtitles with Chinese translation** — generated server-side (faster-whisper + translation),
+  published as plain `.srt` you can read or edit.
+- **Tap a sentence to replay it**, loop it, or jump to the next one.
+- **Vocabulary with FSRS-6** — long-press a word in a subtitle: lemma lookup, the sentence it came from,
+  then spaced repetition (front: recognise it, back: example + pronunciation + the original audio).
+- **Streaks & check-in** — listening time counted locally, calendar view, monthly poster.
+- **Optional multi-device sync** — log in and your check-ins / vocabulary sync; fully usable without an account.
 
-```
-播客 RSS (16 源)
-      │  服务端每 30 分钟一轮（cycle.py）
-      ▼
-┌─────────────────────────────────────────┐
-│ server/  FastAPI + SQLite                │
-│  · 抓 RSS → 下载音频 → 转写 → 翻译         │
-│  · 音频 / 字幕 / 封面 全部**自托管**       │
-│  · 发布 index.json（客户端唯一内容入口）   │
-└─────────────────────────────────────────┘
-      │  HTTPS：index.json / audio / subs / art
-      ▼
-┌─────────────────────────────────────────┐
-│ app/  Kotlin + Compose + Media3          │
-│  · 内容层：目录 → 本地索引 → 懒加载下载     │
-│  · 播放层：Media3 + 逐句字幕同步           │
-│  · 数据层：生词本(FSRS) / 打卡 / 同步      │
-└─────────────────────────────────────────┘
-```
+## Quick start
 
-设计取舍、踩过的坑与工程约定见 [`docs/`](docs/)：
-
-| 文档 | 内容 |
-| --- | --- |
-| [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) | 分层、内容流水线、同步模型、内容策略 |
-| [docs/界面约定.md](docs/界面约定.md) | 视觉语言：色板、字号、间距、动效 |
-| [docs/工程约定-构建与验证.md](docs/工程约定-构建与验证.md) | 断言怎么设计、为什么「永远为真的断言比没有更糟」 |
-| [docs/工程约定-数据与后台.md](docs/工程约定-数据与后台.md) | 下载策略、保留期、通知、并发 |
-| [docs/推送与每日提醒-技术调研.md](docs/推送与每日提醒-技术调研.md) | 小米/OPPO/vivo/荣耀推送的接口事实，以及为什么最后用本地闹钟 |
-
-## 快速开始
-
-### 只跑 App（不接服务器）
-
-App 在拿不到服务器目录时会**退回本机解析 RSS**，所以不部署服务端也能用（只是没有字幕与中文）：
+**Just the app** (no server — falls back to parsing RSS locally, no subtitles):
 
 ```bash
 ./gradlew :app:assembleDebug
 ```
 
-### 配置自己的服务器
-
-打包时把服务器地址传进去（**不要**改源码里的字符串）：
+**With your own server:**
 
 ```bash
-# gradle.properties 里写一行，或命令行传：
+# 1. point the app at your domain at build time (never edit strings in source)
 ./gradlew :app:assembleDebug -PserverBaseUrl=https://your-domain.example
-```
 
-服务端（Debian/Ubuntu，2 核 2G 起步）：
-
-```bash
-# 依赖：python3.11+ / ffmpeg / nginx / (可选) certbot
+# 2. on a Debian/Ubuntu box (python3.11+, ffmpeg, nginx):
 cp -r server /opt/ec
 python3 -m venv /opt/ec/venv && /opt/ec/venv/bin/pip install -r server/api/requirements.txt
-/opt/ec/venv/bin/python server/api/init_db.py          # 建表
-/opt/ec/venv/bin/python server/bin/cycle.py --dry-run  # 先看会抓什么
+/opt/ec/venv/bin/python server/api/init_db.py
+EC_PUBLIC_BASE=https://your-domain.example /opt/ec/venv/bin/python server/bin/cycle.py --dry-run
 ```
 
-完整部署步骤（nginx、systemd、证书、备份）见 [`server/README.md`](server/README.md)。
-必需的环境变量：
+Full deployment (nginx, systemd, TLS, backups) → [`server/README.md`](server/README.md).
 
-| 变量 | 说明 |
-| --- | --- |
-| `EC_PUBLIC_BASE` | 对外地址，如 `https://your-domain.example`（音频/封面/字幕的绝对地址由它拼） |
-| `EC_FALLBACK_BASE` | 可选的 IP 应急更新通道；留空即关闭 |
-| `EC_DB` | SQLite 路径，默认 `/opt/ec/data/ec.db` |
+Two constraints worth knowing before you deploy:
 
-> 两个必须知道的约束（都写在 `server/README.md` 里）：
-> ① **`--workers 1`**：登录限速是进程内状态，多开会变成「上限 × N」且不报错；
-> ② 若保留了 IP 应急通道，它必须与 `publish_update.py` 的 `FALLBACK_BASE_URL` **一致**。
+- **`--workers 1`** — login rate-limiting is in-process state; more workers means the limit silently becomes *N×*.
+- If you keep the IP fallback update channel, it must match `FALLBACK_BASE_URL` in `publish_update.py`.
 
-## 仓库结构
+## Repo layout
 
 ```
-app/                 Android 客户端（Kotlin / Compose / Media3）
-  src/main/java/…    content（内容与索引）/ player（播放与字幕）/ word（生词本+FSRS）
-                     checkin（打卡与目标时间轴）/ sync（账号与多设备同步）/ notify（每日提醒）
-server/              自托管服务端（FastAPI + SQLite + 转写/翻译流水线）
-  api/               HTTP 接口（账号、同步、清单）
-  bin/               定时任务：cycle.py（抓取+转写+发布）、发布脚本、管理命令
-  nginx/             反代与静态资源（模板）
-tools/               构建期断言与验证脚本（见 docs/工程约定-构建与验证.md）
-docs/                设计与工程约定
+app/      Android client — content/ (catalog → local index → lazy download), player/ (Media3 + subtitle sync),
+          word/ (FSRS-6), checkin/, sync/ (optional accounts), notify/ (background subtitle prefetch)
+server/   FastAPI + SQLite; api/ (accounts, sync, catalog), bin/ (cycle.py pipeline, publish & admin scripts),
+          nginx/ (reverse proxy + static, as templates)
+tools/    build-time assertions (see docs/工程约定-构建与验证.md — why an always-true assertion is worse than none)
+docs/     architecture, UI conventions, engineering conventions
 ```
 
-## 数据与隐私
+## FAQ
 
-- 收听记录、生词、打卡**全部存在本机**（`SharedPreferences` / 文件），不登录不上传任何东西。
-- 账号是**可选增强**：登录只影响「打卡与生词本跨设备同步」。
-- 服务端不采集设备标识；同步只上传用户自己产生的打卡秒数与生词卡。
-- 没有广告、没有分析 SDK、没有第三方埋点。
+**Why not use the publisher's transcript?** Many shows don't publish one; some publish a transcript for a
+*differently stitched* audio (different ad inserts), which is worse than none — the timestamps lie.
+Transcribing the exact file you serve is the only way to guarantee alignment.
 
-## 已知取舍
+**Why is the package `com.example.englishcommute`?** This repo is a scrubbed template: no real domain, server,
+account or personal identifier. Change `applicationId` for your own build.
 
-- 多设备同时听同一条内容时，打卡时长会各记各的（服务端按设备求和）——不会丢，但会重复计。
-- 生词本的例句在两端可能不同：语境并集**保留本机顺序**，避免重排把用户看惯的那句换掉。
-- 服务端是单点：它挂掉时 App 退回本机 RSS，能听但没有字幕/译文。
+**Does it work without the server?** Yes, degraded: it parses RSS itself and plays audio — no subtitles,
+no Chinese, no word review.
+
+**Why no push notifications?** Vendor push in China requires corporate developer verification; FCM needs GMS.
+A local alarm was the only option that worked, and it doesn't survive aggressive ROMs — so reminders were
+removed in 4.7.0 rather than shipped broken. Progress lives in the app header instead.
+
+## Known tradeoffs
+
+- Listening to the same episode on two devices counts the time twice (the server sums per device).
+- Example sentences for a word can differ between devices: the merge keeps *your* local order on purpose.
+- Single point of failure: if the server is down, the app falls back to local RSS.
 
 ## License
 
-- **代码**：[MIT](LICENSE)。
-- **随仓库分发的第三方数据**：词库来自 [ECDICT](https://github.com/skywind3000/ECDICT)（MIT），
-  例句来自 [Tatoeba](https://tatoeba.org)（CC BY 2.0 FR），FSRS 参考实现来自
-  [py-fsrs](https://github.com/open-spaced-repetition/py-fsrs)（MIT）。
-  完整署名见 **[ATTRIBUTION.md](ATTRIBUTION.md)**。
-- **播客内容**（音频、封面、字幕原文）不随仓库分发，版权归各内容源，**仅供个人学习**；
-  对外提供服务前请自行确认各源条款。
+- **Code**: [MIT](LICENSE).
+- **Bundled third-party data**: dictionary from [ECDICT](https://github.com/skywind3000/ECDICT) (MIT),
+  examples from [Tatoeba](https://tatoeba.org) (CC BY 2.0 FR), FSRS reference from
+  [py-fsrs](https://github.com/open-spaced-repetition/py-fsrs) (MIT) — see [ATTRIBUTION](ATTRIBUTION.md).
+- **Podcast content** (audio, cover art, transcripts of it) is **not** in this repo and remains the property of
+  each publisher. Personal use only; check each source's terms before serving it to others.

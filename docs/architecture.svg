@@ -1,0 +1,72 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1180 470" width="1180" height="470" role="img" aria-label="EnglishCommute 架构：播客 RSS → 自托管服务器（转写/翻译/托管）→ Android 客户端（听/看/复习）">
+  <title>EnglishCommute 架构</title>
+  <desc>三列：16 个播客 RSS 源；自托管服务器完成下载、转写、翻译并托管音频与字幕；Android 客户端只读一个目录文件，负责播放、逐句字幕、生词复习与打卡。</desc>
+  <rect width="1180" height="470" fill="#FBFAF7"/>
+
+  <text x="40" y="52" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="21" font-weight="500" fill="#16181C">EnglishCommute · 通勤英语</text>
+  <text x="40" y="78" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="13" fill="#6B6F77">自托管播客 → 双语字幕 → 手机上的听/看/复习闭环</text>
+
+  <!-- 列标题 -->
+  <text x="40" y="128" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="11" fill="#8F8B82" letter-spacing="1">① 内容源</text>
+  <text x="452" y="128" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="11" fill="#8F8B82" letter-spacing="1">② 你的服务器（2 核 2G）</text>
+  <text x="900" y="128" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="11" fill="#8F8B82" letter-spacing="1">③ Android 客户端</text>
+
+  <!-- ① 源的卡片栈 -->
+  <rect x="40" y="142" width="300" height="196" rx="10" fill="#F2EEE5"/>
+  <text x="60" y="172" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="500" fill="#16181C">16 个英文播客 RSS</text>
+  <text x="60" y="196" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="12" fill="#3E4249">NPR · BBC · CBC · WSJ</text>
+  <text x="60" y="218" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="12" fill="#3E4249">Al Jazeera · TED · …</text>
+  <line x1="60" y1="240" x2="320" y2="240" stroke="#D5CEC0" stroke-width="1"/>
+  <text x="60" y="264" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="12" fill="#6B6F77">每 30 分钟抓一轮</text>
+  <text x="60" y="286" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="12" fill="#6B6F77">72 小时窗口 · 单集上限 2h</text>
+  <text x="60" y="316" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="11" fill="#8F8B82">RSS 只是「线索」，播放不依赖它</text>
+
+  <!-- 箭头 1 -->
+  <line x1="348" y1="240" x2="412" y2="240" stroke="#757575" stroke-width="1.5"/>
+  <polygon points="412,240 402,235 402,245" fill="#757575"/>
+
+  <!-- ② 服务器 -->
+  <rect x="420" y="142" width="420" height="196" rx="10" fill="#FFFFFF" stroke="#D5CEC0" stroke-width="1"/>
+  <text x="440" y="172" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="500" fill="#16181C">FastAPI + SQLite + faster-whisper</text>
+
+  <rect x="440" y="188" width="86" height="46" rx="6" fill="#FAEEDA"/>
+  <text x="448" y="208" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="11" fill="#633806">下载音频</text>
+  <text x="448" y="224" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="10" fill="#854F0B">→ 暂存区</text>
+
+  <rect x="536" y="188" width="86" height="46" rx="6" fill="#FAEEDA"/>
+  <text x="544" y="208" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="11" fill="#633806">转写</text>
+  <text x="544" y="224" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="10" fill="#854F0B">→ 逐句 SRT</text>
+
+  <rect x="632" y="188" width="86" height="46" rx="6" fill="#FAEEDA"/>
+  <text x="640" y="208" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="11" fill="#633806">翻译</text>
+  <text x="640" y="224" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="10" fill="#854F0B">→ 中文</text>
+
+  <rect x="728" y="188" width="92" height="46" rx="6" fill="#EAF3DE"/>
+  <text x="736" y="208" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="11" fill="#173404">发布 index</text>
+  <text x="736" y="224" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="10" fill="#3B6D11">→ 只发存在的</text>
+
+  <line x1="440" y1="252" x2="800" y2="252" stroke="#E6E1D5" stroke-width="1"/>
+  <text x="440" y="276" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="12" fill="#3E4249">音频 / 字幕 / 封面 <tspan font-weight="500" fill="#16181C">全部托管在这台机器</tspan></text>
+  <text x="440" y="298" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="11" fill="#6B6F77">客户端只跟你的域名说话 ⇒ 字幕时间戳永远不会和音频错位</text>
+  <text x="440" y="320" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="11" fill="#8F8B82">可选：账号登录后打卡与生词本多设备同步（不登录完整可用）</text>
+
+  <!-- 箭头 2 -->
+  <line x1="848" y1="240" x2="892" y2="240" stroke="#757575" stroke-width="1.5"/>
+  <polygon points="892,240 882,235 882,245" fill="#757575"/>
+  <text x="836" y="226" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="10" fill="#8F8B82">HTTPS</text>
+
+  <!-- ③ 客户端 -->
+  <rect x="900" y="142" width="240" height="196" rx="10" fill="#F2EEE5"/>
+  <text x="920" y="172" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="13" font-weight="500" fill="#16181C">Kotlin · Compose · Media3</text>
+  <text x="920" y="202" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="12" fill="#3E4249">· 今日素材（16 源 · 按天分组）</text>
+  <text x="920" y="226" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="12" fill="#3E4249">· 逐句字幕，点一句播一句</text>
+  <text x="920" y="250" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="12" fill="#3E4249">· 生词本 + FSRS-6 复习</text>
+  <text x="920" y="274" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="12" fill="#3E4249">· 打卡 / 连续天数 / 月度海报</text>
+  <text x="920" y="306" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="11" fill="#8F8B82">APK 18 MB · 无广告 · 无埋点</text>
+
+  <!-- 底部三个事实 -->
+  <line x1="40" y1="378" x2="1140" y2="378" stroke="#E6E1D5" stroke-width="1"/>
+  <text x="40" y="406" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="11" fill="#8F8B82">为什么不像别的听力 App：</text>
+  <text x="40" y="432" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="12" fill="#3E4249">① 内容与字幕都由你托管 —— 换 CDN、换广告插播都不会让字幕错位</text>
+  <text x="620" y="432" font-family="-apple-system, 'Segoe UI', 'Microsoft YaHei', sans-serif" font-size="12" fill="#3E4249">② 端侧不跑模型 —— 通勤路上不需要等转写</text>
+</svg>
